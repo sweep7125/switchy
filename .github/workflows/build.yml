@@ -1,0 +1,39 @@
+name: Build and Publish Profiles
+
+on:
+  schedule:
+    - cron: "30 0 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and Publish Profiles
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+          cache-dependency-path: ./go.sum
+
+      - name: Build and Generate Profiles
+        run: |
+          mkdir -p ./results
+
+          go run main.go
+        shell: bash
+
+      - name: Upload Generated Profiles to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: profiles
+          name: profiles
+          files: |
+            ./results/ru-blocked.txt
+            ./results/except-ru.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
