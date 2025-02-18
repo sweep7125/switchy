@@ -8,25 +8,28 @@ import (
 
 // GenerateExceptRu генерирует профиль except-ru.
 func GenerateExceptRu() (string, error) {
-	// Исходная ссылка на файл
+	// Исходная ссылка на файл.
 	baseURL := "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/category-ru"
 
-	// Рекурсивная обработка доменов из файла и всех директив include
+	// Рекурсивная обработка доменов из файла и всех директив include.
 	domainsMap, err := ProcessFile(baseURL, make(map[string]struct{}))
 	if err != nil {
 		return "", fmt.Errorf("ошибка при обработке файла %s: %v", baseURL, err)
 	}
 
-	// Преобразовать map в slice
+	// Преобразовать map в slice.
 	var allDomains []string
 	for domain := range domainsMap {
 		allDomains = append(allDomains, domain)
 	}
 
-	// Оптимизация доменов
-	optimizedDomains := OptimizeDomains(allDomains)
+	// Оптимизация доменов.
+	optimizedDomains, err := OptimizeDomains(allDomains)
+	if err != nil {
+		return "", fmt.Errorf("ошибка оптимизации доменов: %v", err)
+	}
 
-	// Преобразование доменов в формат SwitchyOmega
+	// Преобразование доменов в формат SwitchyOmega.
 	switchyOmegaFormat := GenerateSwitchyOmegaFormat(optimizedDomains)
 
 	return switchyOmegaFormat, nil
@@ -35,7 +38,7 @@ func GenerateExceptRu() (string, error) {
 // ProcessFile рекурсивно обрабатывает файл и все включенные файлы.
 func ProcessFile(url string, processedURLs map[string]struct{}) (map[string]struct{}, error) {
 	if _, exists := processedURLs[url]; exists {
-		// Файл уже обработан
+		// Файл уже обработан.
 		return make(map[string]struct{}), nil
 	}
 
@@ -53,12 +56,12 @@ func ProcessFile(url string, processedURLs map[string]struct{}) (map[string]stru
 			continue
 		}
 
-		// Убираем комментарии из строки
+		// Убираем комментарии из строки.
 		if idx := strings.Index(line, "#"); idx != -1 {
 			line = strings.TrimSpace(line[:idx])
 		}
 
-		// Проверяем директиву include
+		// Проверяем директиву include.
 		if strings.HasPrefix(line, "include:") {
 			includeFile := strings.TrimSpace(strings.TrimPrefix(line, "include:"))
 			includeURL := fmt.Sprintf("https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/%s", includeFile)
