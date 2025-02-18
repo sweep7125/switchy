@@ -20,8 +20,11 @@ func GenerateRuBlocked() (string, error) {
 		return "", fmt.Errorf("ошибка при сборе доменов: %v", err)
 	}
 
-	// Оптимизируем список доменов (удаляем дубликаты и поддомены).
-	optimizedDomains := OptimizeDomains(allDomains)
+	// Оптимизируем список доменов (удаляем дубликаты и группируем по регистрируемым доменам).
+	optimizedDomains, err := OptimizeDomains(allDomains)
+	if err != nil {
+		return "", fmt.Errorf("ошибка при оптимизации доменов: %v", err)
+	}
 
 	// Преобразуем домены в формат SwitchyOmega.
 	switchyOmegaFormat := GenerateSwitchyOmegaFormat(optimizedDomains)
