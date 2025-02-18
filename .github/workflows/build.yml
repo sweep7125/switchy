@@ -20,10 +20,12 @@ jobs:
           go-version-file: ./go.mod
           cache-dependency-path: ./go.sum
 
+      - name: Update dependencies
+        run: go mod tidy
+
       - name: Build and Generate Profiles
         run: |
           mkdir -p ./results
-
           go run main.go
         shell: bash
 
