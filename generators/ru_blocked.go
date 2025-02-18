@@ -5,39 +5,26 @@ import (
 	"fmt"
 )
 
-// GenerateRuBlocked генерирует профиль ru-blocked.
+// GenerateRuBlocked генерирует профиль ru-blocked в формате SwitchyOmega.
 func GenerateRuBlocked() (string, error) {
-	// Список ссылок на файлы с доменами.
+	// Список URL с доменными списками.
 	fileURLs := []string{
 		"https://community.antifilter.download/list/domains.lst",
 		"https://raw.githubusercontent.com/1andrevich/Re-filter-lists/refs/heads/main/domains_all.lst",
-		// Добавляйте сюда новые URL по необходимости
+		// При необходимости добавляйте новые URL.
 	}
 
-	// Сбор всех доменов из файлов.
+	// Параллельно загружаем домены из всех URL.
 	allDomains, err := FetchAllDomains(fileURLs)
 	if err != nil {
 		return "", fmt.Errorf("ошибка при сборе доменов: %v", err)
 	}
 
-	// Оптимизация доменов.
+	// Оптимизируем список доменов (удаляем дубликаты и поддомены).
 	optimizedDomains := OptimizeDomains(allDomains)
 
-	// Преобразование доменов в формат SwitchyOmega.
+	// Преобразуем домены в формат SwitchyOmega.
 	switchyOmegaFormat := GenerateSwitchyOmegaFormat(optimizedDomains)
 
 	return switchyOmegaFormat, nil
-}
-
-// FetchAllDomains загружает домены из всех указанных URL.
-func FetchAllDomains(urls []string) ([]string, error) {
-	var allDomains []string
-	for _, url := range urls {
-		domains, err := FetchDomains(url)
-		if err != nil {
-			return nil, err
-		}
-		allDomains = append(allDomains, domains...)
-	}
-	return allDomains, nil
 }
