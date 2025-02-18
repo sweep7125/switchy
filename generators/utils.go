@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/net/publicsuffix"
 )
 
 // HTTP-клиент с таймаутом для всех запросов.
@@ -87,42 +89,36 @@ func FetchAllDomains(urls []string) ([]string, error) {
 	return allDomains, nil
 }
 
-// OptimizeDomains удаляет дубликаты и поддомены, оставляя только самые общие домены.
-func OptimizeDomains(domains []string) []string {
-	// Удаляем дубликаты.
-	uniqueMap := make(map[string]struct{})
+// OptimizeDomains группирует домены по регистрируемому домену (Effective TLD Plus One)
+// и возвращает уникальный список, который позволяет покрыть все поддомены одним правилом.
+func OptimizeDomains(domains []string) ([]string, error) {
+	registrableMap := make(map[string]struct{})
+
 	for _, domain := range domains {
-		uniqueMap[domain] = struct{}{}
-	}
-
-	uniqueDomains := make([]string, 0, len(uniqueMap))
-	for domain := range uniqueMap {
-		uniqueDomains = append(uniqueDomains, domain)
-	}
-
-	// Сортируем домены по количеству точек (от меньшего к большему).
-	sort.Slice(uniqueDomains, func(i, j int) bool {
-		return strings.Count(uniqueDomains[i], ".") < strings.Count(uniqueDomains[j], ".")
-	})
-
-	optimized := make([]string, 0, len(uniqueDomains))
-	// Добавляем домены, если они не покрываются уже добавленными.
-	for _, domain := range uniqueDomains {
-		covered := false
-		for _, optDomain := range optimized {
-			if domain == optDomain || strings.HasSuffix(domain, "."+optDomain) {
-				covered = true
-				break
-			}
+		// Приводим домен к нижнему регистру для единообразия.
+		domain = strings.ToLower(strings.TrimSpace(domain))
+		if domain == "" {
+			continue
 		}
-		if !covered {
-			optimized = append(optimized, domain)
+
+		// Получаем регистрируемый домен, например, для a.b.sinema2.top -> sinema2.top.
+		regDomain, err := publicsuffix.EffectiveTLDPlusOne(domain)
+		if err != nil {
+			// Если не удалось получить регистрируемый домен, используем оригинал.
+			regDomain = domain
 		}
+		registrableMap[regDomain] = struct{}{}
 	}
 
-	// Сортируем окончательный список для стабильного вывода.
+	// Преобразуем карту в срез.
+	optimized := make([]string, 0, len(registrableMap))
+	for regDomain := range registrableMap {
+		optimized = append(optimized, regDomain)
+	}
+
+	// Сортировка для стабильного вывода.
 	sort.Strings(optimized)
-	return optimized
+	return optimized, nil
 }
 
 // GenerateSwitchyOmegaFormat преобразует список доменов в формат SwitchyOmega.
